@@ -63,6 +63,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenLegal, onOpenQ
                   </button>
                 </li>
                 <li>
+                  <button onClick={() => onNavigate('faq')} className="hover:text-white transition-colors">
+                    Frequently Asked Questions (FAQ)
+                  </button>
+                </li>
+                <li>
                   <button onClick={() => onNavigate('guides')} className="hover:text-white transition-colors">
                     Guides &amp; Blog (PLC / Arduino)
                   </button>

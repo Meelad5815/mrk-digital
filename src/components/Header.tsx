@@ -15,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({ activeSection, onNavigate, onOpe
     { id: 'services', label: 'Services', badge: '36' },
     { id: 'projects', label: 'Projects' },
     { id: 'estimator', label: 'Cost Estimator' },
+    { id: 'faq', label: 'FAQ' },
     { id: 'guides', label: 'Guides & Blog' },
     { id: 'about', label: 'About' },
     { id: 'contact', label: 'Contact' },

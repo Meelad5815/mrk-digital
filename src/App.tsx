@@ -6,6 +6,7 @@ import { WhyUsAndProcess } from './components/WhyUsAndProcess';
 import { ProjectsSection } from './components/ProjectsSection';
 import { QuoteEstimator } from './components/QuoteEstimator';
 import { GuidesSection } from './components/GuidesSection';
+import { FaqSection } from './components/FaqSection';
 import { AboutSection } from './components/AboutSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
@@ -98,6 +99,12 @@ export default function App() {
         {/* Practical Guides & Knowledge Base */}
         <GuidesSection
           onOpenQuote={handleOpenQuote}
+        />
+
+        {/* Frequently Asked Questions: Pricing & Timelines */}
+        <FaqSection
+          onOpenQuote={handleOpenQuote}
+          onOpenChat={handleOpenChat}
         />
 
         {/* About MRK Digital */}
