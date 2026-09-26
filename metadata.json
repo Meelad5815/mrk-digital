@@ -1,0 +1,6 @@
+{
+  "name": "MRK Digital & Online Services Center",
+  "description": "Professional Web Development, Digital Services, PLC, Arduino & IoT Automation Solutions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
