@@ -1,0 +1,1 @@
+<?php get_header(); ?><main class="mrk-section"><div class="mrk-wrap"><span class="mrk-kicker">404</span><h1>Page not found</h1><p class="mrk-lead">The page you requested does not exist.</p><a class="mrk-btn mrk-btn-primary" href="<?php echo esc_url(home_url('/')); ?>">Back to Home</a></div></main><?php get_footer(); ?>
