@@ -64,3 +64,6 @@ function mrk_seed_default_content(){
  update_option('mrk_content_seeded',1);
 }
 add_action('admin_init','mrk_seed_default_content');
+
+function mrk_theme_activate(){ mrk_register_content_types(); flush_rewrite_rules(); }
+add_action('after_switch_theme','mrk_theme_activate');
