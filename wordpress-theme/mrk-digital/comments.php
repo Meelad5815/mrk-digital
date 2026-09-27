@@ -1,0 +1,1 @@
+<?php if(!defined('ABSPATH')) exit; if(post_password_required()) return; ?><section class="mrk-section" id="comments"><div class="mrk-wrap"><h2><?php echo esc_html(get_comments_number()); ?> Comments</h2><?php if(have_comments()): ?><ol><?php wp_list_comments(array('style'=>'ol')); ?></ol><?php endif; ?><?php comment_form(); ?></div></section>
