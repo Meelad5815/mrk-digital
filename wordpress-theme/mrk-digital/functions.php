@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+require_once get_template_directory() . '/inc/content.php';
+
 function mrk_digital_setup() {
     add_theme_support('title-tag');
     add_theme_support('post-thumbnails');
@@ -82,3 +84,12 @@ add_action('admin_post_mrk_quote','mrk_digital_send_quote');
 function mrk_digital_excerpt($text,$words=24){
     return wp_trim_words(wp_strip_all_tags($text),$words,'…');
 }
+
+function mrk_digital_customize_register($wp_customize) {
+ $wp_customize->add_section('mrk_contact',array('title'=>'MRK Digital Contact','priority'=>30));
+ foreach(array('whatsapp'=>'WhatsApp Number','email'=>'Business Email','location'=>'Business Location') as $key=>$label){
+   $wp_customize->add_setting('mrk_'.$key,array('default'=> $key==='whatsapp' ? '+92 327 0447263' : ($key==='email' ? 'hafizmuhammadmeeladraza@gmail.com' : 'Pakistan · Remote Worldwide'),'sanitize_callback'=>'sanitize_text_field'));
+   $wp_customize->add_control('mrk_'.$key,array('label'=>$label,'section'=>'mrk_contact','type'=>'text'));
+ }
+}
+add_action('customize_register','mrk_digital_customize_register');
