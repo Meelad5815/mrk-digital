@@ -27,24 +27,21 @@
   <p class="mrk-lead">Service availability and final pricing are confirmed after understanding the actual scope.</p>
   <div class="mrk-toolbar"><input id="mrk-service-search" class="mrk-input mrk-search" type="search" placeholder="Search services or technology…"></div>
   <div id="mrk-services" class="mrk-cards">
-   <?php foreach(mrk_digital_services() as $s): ?>
-    <article class="mrk-card" data-search="<?php echo esc_attr(strtolower(implode(' ',$s))); ?>">
-      <span class="mrk-badge"><?php echo esc_html($s[1]); ?></span><h3><?php echo esc_html($s[0]); ?></h3><p><?php echo esc_html($s[2]); ?></p><div class="mrk-price">Starting: <?php echo esc_html($s[3]); ?></div>
+   <?php $sq=new WP_Query(array('post_type'=>'mrk_service','posts_per_page'=>-1,'orderby'=>'title','order'=>'ASC')); if($sq->have_posts()): while($sq->have_posts()):$sq->the_post(); $area=get_post_meta(get_the_ID(),'mrk_area',true); $price=get_post_meta(get_the_ID(),'mrk_price',true); ?>
+    <article class="mrk-card" data-search="<?php echo esc_attr(strtolower(get_the_title().' '.$area.' '.get_the_excerpt())); ?>">
+      <span class="mrk-badge"><?php echo esc_html($area); ?></span><h3><?php the_title(); ?></h3><p><?php echo esc_html(mrk_digital_excerpt(get_the_excerpt(),24)); ?></p><?php if($price): ?><div class="mrk-price">Starting: <?php echo esc_html($price); ?></div><?php endif; ?>
     </article>
-   <?php endforeach; ?>
-  </div>
- </div>
+   <?php endwhile; wp_reset_postdata(); else: ?><p>No services added yet.</p><?php endif; ?>
+  </div> </div>
 </section>
 
 <section id="projects" class="mrk-section alt">
  <div class="mrk-wrap"><span class="mrk-kicker">Selected Work</span><h2>Practical projects across software and automation.</h2>
   <div class="mrk-project">
-   <article class="mrk-card"><span class="mrk-badge">ARDUINO / AUTOMATION</span><h3>Automatic Water Tank Controller</h3><p>Dual-level sensing → Arduino/ESP32 → opto-isolated relay → motor/pump, with dry-run protection, manual override and status display.</p><p><b>Core:</b> Arduino/ESP32 · Ultrasonic/float sensors · Relay · I2C display</p></article>
-   <article class="mrk-card"><span class="mrk-badge">PLC</span><h3>Industrial Conveyor & Multi-Motor PLC Control</h3><p>PLC sequencing, VFD speed modulation, sensor feedback and emergency interlocking for an industrial workflow.</p><p><b>Core:</b> Siemens S7-1200 · VFD · HMI · Ladder Logic</p></article>
-   <article class="mrk-card"><span class="mrk-badge">IoT</span><h3>ESP32 Environmental Monitoring</h3><p>Temperature, humidity and energy telemetry with MQTT/cloud dashboard concepts and remote alerts.</p></article>
-   <article class="mrk-card"><span class="mrk-badge">WEB DEVELOPMENT</span><h3>E-commerce & Digital Inventory Platform</h3><p>Responsive catalog, quote/order workflow, filters and WhatsApp-oriented customer contact flow.</p></article>
-  </div>
- </div>
+   <?php $pq=new WP_Query(array('post_type'=>'mrk_project','posts_per_page'=>-1,'orderby'=>'date','order'=>'DESC')); if($pq->have_posts()): while($pq->have_posts()):$pq->the_post(); $tech=get_post_meta(get_the_ID(),'mrk_technology',true); $status=get_post_meta(get_the_ID(),'mrk_status',true); ?>
+    <article class="mrk-card"><span class="mrk-badge"><?php echo esc_html($status ?: 'PROJECT'); ?></span><h3><?php the_title(); ?></h3><p><?php echo esc_html(mrk_digital_excerpt(get_the_excerpt() ?: get_the_content(),30)); ?></p><?php if($tech): ?><p><b>Technology:</b> <?php echo esc_html($tech); ?></p><?php endif; ?></article>
+   <?php endwhile; wp_reset_postdata(); else: ?><p>No projects added yet.</p><?php endif; ?>
+  </div> </div>
 </section>
 
 <section id="estimator" class="mrk-section">
