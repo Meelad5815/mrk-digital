@@ -15,7 +15,7 @@
     </a>
     <?php if(has_nav_menu('primary')) wp_nav_menu(array('theme_location'=>'primary','container'=>false,'menu_class'=>'mrk-menu')); else mrk_digital_menu_fallback(); ?>
     <div class="mrk-actions">
-      <a class="mrk-btn mrk-btn-light" href="https://wa.me/923270447263?text=Hello%20MRK%20Digital,%20I%20need%20technical%20help." target="_blank" rel="noopener">WhatsApp</a>
+      <a class="mrk-btn mrk-btn-light" href="https://wa.me/<?php echo esc_attr(preg_replace("/\D+/","",get_theme_mod("mrk_whatsapp","+92 327 0447263"))); ?>?text=Hello%20MRK%20Digital%2C%20I%20need%20technical%20help." target="_blank" rel="noopener">WhatsApp</a>
       <a class="mrk-btn mrk-btn-primary" href="#contact">Free Quote</a>
     </div>
     <div class="mrk-mobile">
