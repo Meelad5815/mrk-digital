@@ -1,0 +1,1 @@
+<?php get_header(); ?><main class="mrk-section"><div class="mrk-wrap" style="max-width:850px"><?php while(have_posts()):the_post(); ?><article><span class="mrk-kicker">MRK Digital Guide</span><h1><?php the_title(); ?></h1><p class="mrk-note"><?php echo esc_html(get_the_date()); ?></p><div><?php the_content(); ?></div></article><?php endwhile; ?></div></main><?php get_footer(); ?>
