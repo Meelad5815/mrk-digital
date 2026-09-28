@@ -76,7 +76,7 @@ function mrk_digital_send_quote() {
     $service=sanitize_text_field($_POST['service'] ?? '');
     $message=sanitize_textarea_field($_POST['message'] ?? '');
     $text="Hello MRK Digital, I would like a quote.%0AName: ".rawurlencode($name)."%0APhone: ".rawurlencode($phone)."%0AService: ".rawurlencode($service)."%0AProject: ".rawurlencode($message);
-    wp_safe_redirect('https://wa.me/923270447263?text='.$text); exit;
+    wp_redirect('https://wa.me/923270447263?text='.$text); exit;
 }
 add_action('admin_post_nopriv_mrk_quote','mrk_digital_send_quote');
 add_action('admin_post_mrk_quote','mrk_digital_send_quote');
