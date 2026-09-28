@@ -93,3 +93,33 @@ function mrk_digital_customize_register($wp_customize) {
  }
 }
 add_action('customize_register','mrk_digital_customize_register');
+
+
+function mrk_digital_schema() {
+    if (is_admin()) return;
+    $phone = get_theme_mod('mrk_whatsapp', '+92 327 0447263');
+    $email = get_theme_mod('mrk_email', 'hafizmuhammadmeeladraza@gmail.com');
+    $schema = array(
+        '@context' => 'https://schema.org',
+        '@type' => 'ProfessionalService',
+        'name' => 'MRK Digital Center',
+        'url' => home_url('/'),
+        'email' => $email,
+        'telephone' => $phone,
+        'description' => 'Web development, WordPress, Shopify, app development, graphic design, digital services, PLC, Arduino, ESP32 and automation solutions.',
+        'areaServed' => array('Pakistan', 'Mian Channu', 'Khanewal', 'Multan'),
+        'serviceType' => array(
+            'Web Development',
+            'WordPress Development',
+            'Shopify Development',
+            'App Development',
+            'Graphic Design',
+            'Digital Services',
+            'PLC Programming',
+            'Arduino and ESP32 Projects',
+            'Industrial Automation'
+        )
+    );
+    echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . '</script>';
+}
+add_action('wp_head', 'mrk_digital_schema', 20);
