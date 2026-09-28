@@ -49,6 +49,17 @@
  </div>
 </section>
 
+<section class="mrk-section alt" id="service-match">
+ <div class="mrk-wrap"><span class="mrk-kicker">Start Here</span><h2>Not sure which service you need?</h2>
+  <p class="mrk-lead">Choose the result you want. We’ll point you toward the relevant MRK Digital service.</p>
+  <div class="mrk-cards">
+   <article class="mrk-card"><span class="mrk-badge">BUSINESS</span><h3>I need more customers online</h3><p>Business website, WordPress, e-commerce or a custom web solution.</p><a class="mrk-price" href="#estimator">Check website estimate →</a></article>
+   <article class="mrk-card"><span class="mrk-badge">SOFTWARE</span><h3>I need a custom system</h3><p>Web apps, Python/Django, databases, business software or workflow tools.</p><a class="mrk-price" href="#contact">Discuss a software project →</a></article>
+   <article class="mrk-card"><span class="mrk-badge">AUTOMATION</span><h3>I need a machine or process automated</h3><p>PLC, Arduino, ESP32, sensors, motor control and practical automation concepts.</p><a class="mrk-price" href="#contact">Discuss automation →</a></article>
+  </div>
+ </div>
+</section>
+
 <section id="estimator" class="mrk-section">
  <div class="mrk-wrap">
   <span class="mrk-kicker">Quick Estimate</span><h2>Get a rough project estimate.</h2>
