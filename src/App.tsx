@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Dashboard from './Dashboard';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { ServicesSection } from './components/ServicesSection';
@@ -22,6 +23,11 @@ export default function App() {
   const [legalModalOpen, setLegalModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState<'privacy' | 'terms' | 'disclaimer'>('privacy');
   const [chatOpen, setChatOpen] = useState(false);
+
+  // Keep the public website intact and expose the private-use workspace at /dashboard.
+  if (window.location.pathname.replace(/\\/$/, '') === '/dashboard') {
+    return <Dashboard />;
+  }
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
