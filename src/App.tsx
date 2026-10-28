@@ -25,7 +25,7 @@ export default function App() {
   const [chatOpen, setChatOpen] = useState(false);
 
   // Keep the public website intact and expose the private-use workspace at /dashboard.
-  if (window.location.pathname.replace(/\\/$/, '') === '/dashboard') {
+  if ((window.location.pathname === '/dashboard' || window.location.pathname === '/dashboard/')) {
     return <Dashboard />;
   }
 
