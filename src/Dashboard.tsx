@@ -39,7 +39,7 @@ const readStore = (): Store => {
 };
 
 export default function Dashboard() {
-  const [data, setData] = useState<Store>(emptyStore);
+  const [data, setData] = useState<Store>(() => readStore());
   const [active, setActive] = useState<Section>('overview');
   const [query, setQuery] = useState('');
   const [modal, setModal] = useState(false);
@@ -47,7 +47,6 @@ export default function Dashboard() {
   const [notice, setNotice] = useState('');
   const [form, setForm] = useState({ name: '', date: today(), amount: '', status: 'Pending' as Status, phone: '', category: '', dueDate: '', notes: '' });
 
-  useEffect(() => { setData(readStore()); }, []);
   useEffect(() => { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }, [data]);
 
   const all = useMemo(() => Object.entries(data).flatMap(([section, items]) =>
