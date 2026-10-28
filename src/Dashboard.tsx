@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { supabase, supabaseConfigured } from './lib/supabase';
 import {
   Activity, ArrowDownRight, ArrowUpRight, BriefcaseBusiness, CheckCircle2,
   ClipboardList, Download, FileText, FolderKanban, LayoutDashboard, Plus,
@@ -38,8 +39,9 @@ const readStore = (): Store => {
   } catch { return emptyStore; }
 };
 
-export default function Dashboard() {
+function DashboardWorkspace({ onSignOut }: { onSignOut: () => void }) {
   const [data, setData] = useState<Store>(() => readStore());
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [active, setActive] = useState<Section>('overview');
   const [query, setQuery] = useState('');
   const [modal, setModal] = useState(false);
@@ -47,7 +49,36 @@ export default function Dashboard() {
   const [notice, setNotice] = useState('');
   const [form, setForm] = useState({ name: '', date: today(), amount: '', status: 'Pending' as Status, phone: '', category: '', dueDate: '', notes: '' });
 
-  useEffect(() => { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }, [data]);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!supabase) { setDataLoaded(true); return; }
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return;
+      const { data: row, error } = await supabase.from('mrk_workspaces').select('workspace_data').eq('user_id', authData.user.id).maybeSingle();
+      if (cancelled) return;
+      if (error) { setNotice('Could not load cloud records. Check the Supabase table setup.'); setDataLoaded(true); return; }
+      if (row?.workspace_data) setData({ ...emptyStore, ...row.workspace_data });
+      setDataLoaded(true);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!dataLoaded) return;
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    const saveCloud = async () => {
+      if (!supabase) return;
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return;
+      const { error } = await supabase.from('mrk_workspaces').upsert({
+        user_id: authData.user.id, workspace_data: data, updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+      if (error) setNotice('Cloud save failed. Please check your database setup and connection.');
+    };
+    saveCloud();
+  }, [data, dataLoaded]);
 
   const all = useMemo(() => Object.entries(data).flatMap(([section, items]) =>
     items.map(item => ({ ...item, section: section as Exclude<Section, 'overview'> }))
@@ -137,9 +168,9 @@ export default function Dashboard() {
               </button>;
             })}
           </nav>
-          <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
+          <button onClick={onSignOut} className="mb-4 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-300 hover:bg-white/10"><X size={18}/> Sign out</button><div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="mb-2 flex items-center gap-2 text-sm font-bold"><Database size={16} className="text-teal-300"/> Private browser storage</div>
-            <p className="text-xs leading-5 text-slate-400">Records are stored in this browser only. Export backups regularly.</p>
+            <p className="text-xs leading-5 text-slate-400">Records sync to your private cloud workspace. Export backups regularly.</p>
           </div>
         </aside>
 
@@ -240,3 +271,53 @@ function StatusPill({ status }: { status: Status }) {
   return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${styles[status]}`}>{status}</span>;
 }
 function EmptyState({ title, message }: { title: string; message: string }) { return <div className="px-5 py-12 text-center"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><CircleDollarSign size={22}/></span><h3 className="mt-3 font-bold">{title}</h3><p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">{message}</p></div>; }
+
+
+export default function Dashboard() {
+  const [session, setSession] = useState<any>(null);
+  const [checking, setChecking] = useState(true);
+  const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!supabase) { setChecking(false); return; }
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setChecking(false); });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const submitAuth = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!supabase) return;
+    setBusy(true); setMessage('');
+    try {
+      if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({ email: email.trim(), password });
+        if (error) throw error;
+        setMessage('Account request submitted. Check your email to confirm registration, then sign in.');
+        setMode('signin');
+      } else if (mode === 'reset') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin + '/dashboard' });
+        if (error) throw error;
+        setMessage('If this email is registered, a password reset link has been sent.');
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+        setSession(data.session);
+      }
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally { setBusy(false); }
+  };
+
+  if (checking) return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white"><div className="text-center"><div className="mx-auto mb-3 h-9 w-9 animate-spin rounded-full border-4 border-blue-300 border-t-transparent"/><p>Loading secure workspace…</p></div></div>;
+
+  if (!supabaseConfigured || !supabase) return <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-slate-900"><div className="w-full max-w-xl rounded-3xl bg-white p-7 shadow-2xl sm:p-10"><div className="mb-6 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 font-black text-white">MRK</span><div><p className="text-xs font-bold uppercase tracking-widest text-blue-600">Setup required</p><h1 className="text-2xl font-black">Secure cloud workspace</h1></div></div><p className="text-sm leading-6 text-slate-600">The professional dashboard code is ready, but cloud login requires a Supabase project and two Vercel environment variables. No database credentials are embedded in the website.</p><ol className="mt-5 list-decimal space-y-3 pl-5 text-sm leading-6"><li>Create a free project at <a className="font-bold text-blue-700 underline" href="https://supabase.com/dashboard" target="_blank" rel="noreferrer">Supabase Dashboard</a>.</li><li>In Supabase → SQL Editor, run the <code className="rounded bg-slate-100 px-1">supabase/schema.sql</code> file from the GitHub repository.</li><li>In Supabase → Project Settings → API, copy the Project URL and anon/public key.</li><li>In Vercel → MRK Digital → Settings → Environment Variables, add <code className="rounded bg-slate-100 px-1">VITE_SUPABASE_URL</code> and <code className="rounded bg-slate-100 px-1">VITE_SUPABASE_ANON_KEY</code>, then redeploy.</li></ol><a className="mt-6 inline-flex rounded-xl bg-blue-600 px-4 py-3 font-bold text-white" href="https://vercel.com/meelad5815s-projects/mrk-digital/settings/environment-variables" target="_blank" rel="noreferrer">Open Vercel Environment Settings ↗</a><p className="mt-4 text-xs leading-5 text-slate-500">Keep the Supabase service-role key private. Only the anon/public key belongs in the VITE environment variable. Row-level security is included in the SQL schema.</p></div></div>;
+
+  if (!session) return <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900 via-slate-950 to-slate-950 px-4 py-10"><div className="w-full max-w-md rounded-3xl border border-white/10 bg-white p-7 shadow-2xl sm:p-9"><div className="mb-8 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 font-black text-white">MRK</span><div><p className="text-xs font-bold uppercase tracking-widest text-blue-600">MRK Digital</p><h1 className="text-2xl font-black text-slate-900">Business workspace</h1></div></div><h2 className="text-xl font-extrabold text-slate-900">{mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset password' : 'Welcome back'}</h2><p className="mt-2 text-sm text-slate-500">Secure access to clients, orders, projects and finances.</p><form className="mt-6 space-y-4" onSubmit={submitAuth}><label className="block text-sm font-bold text-slate-700">Email address<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className={inputClass} placeholder="you@example.com"/></label>{mode !== 'reset' && <label className="block text-sm font-bold text-slate-700">Password<input required minLength={8} type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={e=>setPassword(e.target.value)} className={inputClass} placeholder="At least 8 characters"/></label>}<button disabled={busy} className="w-full rounded-xl bg-blue-600 px-4 py-3 font-extrabold text-white hover:bg-blue-700 disabled:opacity-60">{busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : mode === 'reset' ? 'Send reset link' : 'Sign in'}</button></form>{message && <p role="status" className="mt-4 rounded-xl bg-blue-50 p-3 text-sm text-blue-800">{message}</p>}<div className="mt-5 flex flex-wrap justify-between gap-3 text-sm"><button onClick={()=>{setMode(mode==='signup'?'signin':'signup');setMessage('');}} className="font-bold text-blue-700">{mode==='signup'?'Already have an account? Sign in':'Create account'}</button><button onClick={()=>{setMode(mode==='reset'?'signin':'reset');setMessage('');}} className="text-slate-500 underline">{mode==='reset'?'Back to sign in':'Forgot password?'}</button></div><p className="mt-7 text-xs leading-5 text-slate-400">Your workspace is private to your account. Never share your password or recovery link.</p></div></div>;
+
+  return <DashboardWorkspace onSignOut={async () => { await supabase?.auth.signOut(); setSession(null); }}/>;
+}
