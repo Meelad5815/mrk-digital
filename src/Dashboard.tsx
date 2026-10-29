@@ -15,6 +15,7 @@ type RecordItem = {
 type Store = Record<Exclude<Section, 'overview'>, RecordItem[]>;
 
 const STORE_KEY = 'mrk-digital-business-dashboard-v1';
+const userStoreKey = (userId: string) => `${STORE_KEY}:${userId}`;
 const today = () => new Date().toISOString().slice(0, 10);
 const emptyStore: Store = { tasks: [], clients: [], orders: [], income: [], expenses: [], projects: [] };
 const nav: { id: Section; label: string; icon: React.ElementType }[] = [
@@ -30,17 +31,17 @@ const titles: Record<Exclude<Section, 'overview'>, string> = {
   tasks: 'Daily tasks', clients: 'Clients', orders: 'Orders', income: 'Income', expenses: 'Expenses', projects: 'Projects'
 };
 const money = (value: number) => new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(value || 0);
-const readStore = (): Store => {
+const readStore = (userId: string): Store => {
   try {
-    const raw = localStorage.getItem(STORE_KEY);
+    const raw = localStorage.getItem(userStoreKey(userId));
     if (!raw) return emptyStore;
     const parsed = JSON.parse(raw);
     return { ...emptyStore, ...parsed };
   } catch { return emptyStore; }
 };
 
-function DashboardWorkspace({ onSignOut }: { onSignOut: () => void }) {
-  const [data, setData] = useState<Store>(() => readStore());
+function DashboardWorkspace({ onSignOut, userId }: { onSignOut: () => void; userId: string }) {
+  const [data, setData] = useState<Store>(() => readStore(userId));
   const [dataLoaded, setDataLoaded] = useState(false);
   const [active, setActive] = useState<Section>('overview');
   const [query, setQuery] = useState('');
@@ -67,7 +68,7 @@ function DashboardWorkspace({ onSignOut }: { onSignOut: () => void }) {
 
   useEffect(() => {
     if (!dataLoaded) return;
-    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    localStorage.setItem(userStoreKey(userId), JSON.stringify(data));
     const saveCloud = async () => {
       if (!supabase) return;
       const { data: authData } = await supabase.auth.getUser();
@@ -289,6 +290,21 @@ export default function Dashboard() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  const signInWithGoogle = async () => {
+    if (!supabase) return;
+    setBusy(true); setMessage('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + '/dashboard' }
+      });
+      if (error) throw error;
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Google sign-in could not start. Check the Google provider setup.');
+      setBusy(false);
+    }
+  };
+
   const submitAuth = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!supabase) return;
@@ -317,7 +333,7 @@ export default function Dashboard() {
 
   if (!supabaseConfigured || !supabase) return <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-slate-900"><div className="w-full max-w-xl rounded-3xl bg-white p-7 shadow-2xl sm:p-10"><div className="mb-6 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 font-black text-white">MRK</span><div><p className="text-xs font-bold uppercase tracking-widest text-blue-600">Setup required</p><h1 className="text-2xl font-black">Secure cloud workspace</h1></div></div><p className="text-sm leading-6 text-slate-600">The professional dashboard code is ready, but cloud login requires a Supabase project and two Vercel environment variables. No database credentials are embedded in the website.</p><ol className="mt-5 list-decimal space-y-3 pl-5 text-sm leading-6"><li>Create a free project at <a className="font-bold text-blue-700 underline" href="https://supabase.com/dashboard" target="_blank" rel="noreferrer">Supabase Dashboard</a>.</li><li>In Supabase → SQL Editor, run the <code className="rounded bg-slate-100 px-1">supabase/schema.sql</code> file from the GitHub repository.</li><li>In Supabase → Project Settings → API, copy the Project URL and anon/public key.</li><li>In Vercel → MRK Digital → Settings → Environment Variables, add <code className="rounded bg-slate-100 px-1">VITE_SUPABASE_URL</code> and <code className="rounded bg-slate-100 px-1">VITE_SUPABASE_ANON_KEY</code>, then redeploy.</li></ol><a className="mt-6 inline-flex rounded-xl bg-blue-600 px-4 py-3 font-bold text-white" href="https://vercel.com/meelad5815s-projects/mrk-digital/settings/environment-variables" target="_blank" rel="noreferrer">Open Vercel Environment Settings ↗</a><p className="mt-4 text-xs leading-5 text-slate-500">Keep the Supabase service-role key private. Only the anon/public key belongs in the VITE environment variable. Row-level security is included in the SQL schema.</p></div></div>;
 
-  if (!session) return <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900 via-slate-950 to-slate-950 px-4 py-10"><div className="w-full max-w-md rounded-3xl border border-white/10 bg-white p-7 shadow-2xl sm:p-9"><div className="mb-8 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 font-black text-white">MRK</span><div><p className="text-xs font-bold uppercase tracking-widest text-blue-600">MRK Digital</p><h1 className="text-2xl font-black text-slate-900">Business workspace</h1></div></div><h2 className="text-xl font-extrabold text-slate-900">{mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset password' : 'Welcome back'}</h2><p className="mt-2 text-sm text-slate-500">Secure access to clients, orders, projects and finances.</p><form className="mt-6 space-y-4" onSubmit={submitAuth}><label className="block text-sm font-bold text-slate-700">Email address<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className={inputClass} placeholder="you@example.com"/></label>{mode !== 'reset' && <label className="block text-sm font-bold text-slate-700">Password<input required minLength={8} type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={e=>setPassword(e.target.value)} className={inputClass} placeholder="At least 8 characters"/></label>}<button disabled={busy} className="w-full rounded-xl bg-blue-600 px-4 py-3 font-extrabold text-white hover:bg-blue-700 disabled:opacity-60">{busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : mode === 'reset' ? 'Send reset link' : 'Sign in'}</button></form>{message && <p role="status" className="mt-4 rounded-xl bg-blue-50 p-3 text-sm text-blue-800">{message}</p>}<div className="mt-5 flex flex-wrap justify-between gap-3 text-sm"><button onClick={()=>{setMode(mode==='signup'?'signin':'signup');setMessage('');}} className="font-bold text-blue-700">{mode==='signup'?'Already have an account? Sign in':'Create account'}</button><button onClick={()=>{setMode(mode==='reset'?'signin':'reset');setMessage('');}} className="text-slate-500 underline">{mode==='reset'?'Back to sign in':'Forgot password?'}</button></div><p className="mt-7 text-xs leading-5 text-slate-400">Your workspace is private to your account. Never share your password or recovery link.</p></div></div>;
+  if (!session) return <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900 via-slate-950 to-slate-950 px-4 py-10"><div className="w-full max-w-md rounded-3xl border border-white/10 bg-white p-7 shadow-2xl sm:p-9"><div className="mb-8 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 font-black text-white">MRK</span><div><p className="text-xs font-bold uppercase tracking-widest text-blue-600">MRK Digital</p><h1 className="text-2xl font-black text-slate-900">Business workspace</h1></div></div><h2 className="text-xl font-extrabold text-slate-900">{mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset password' : 'Welcome back'}</h2><p className="mt-2 text-sm text-slate-500">Secure access to clients, orders, projects and finances.</p>{mode !== 'reset' && <><button type="button" disabled={busy} onClick={signInWithGoogle} className="mt-6 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 font-extrabold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"><span className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 text-sm font-black text-blue-600">G</span>Continue with Google</button><div className="my-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-200"/><span>or use email</span><span className="h-px flex-1 bg-slate-200"/></div></>}<form className="mt-4 space-y-4" onSubmit={submitAuth}><label className="block text-sm font-bold text-slate-700">Email address<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className={inputClass} placeholder="you@example.com"/></label>{mode !== 'reset' && <label className="block text-sm font-bold text-slate-700">Password<input required minLength={8} type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={e=>setPassword(e.target.value)} className={inputClass} placeholder="At least 8 characters"/></label>}<button disabled={busy} className="w-full rounded-xl bg-blue-600 px-4 py-3 font-extrabold text-white hover:bg-blue-700 disabled:opacity-60">{busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : mode === 'reset' ? 'Send reset link' : 'Sign in'}</button></form>{message && <p role="status" className="mt-4 rounded-xl bg-blue-50 p-3 text-sm text-blue-800">{message}</p>}<div className="mt-5 flex flex-wrap justify-between gap-3 text-sm"><button onClick={()=>{setMode(mode==='signup'?'signin':'signup');setMessage('');}} className="font-bold text-blue-700">{mode==='signup'?'Already have an account? Sign in':'Create account'}</button><button onClick={()=>{setMode(mode==='reset'?'signin':'reset');setMessage('');}} className="text-slate-500 underline">{mode==='reset'?'Back to sign in':'Forgot password?'}</button></div><p className="mt-7 text-xs leading-5 text-slate-400">Your workspace is private to your account. Never share your password or recovery link.</p></div></div>;
 
-  return <DashboardWorkspace onSignOut={async () => { await supabase?.auth.signOut(); setSession(null); }}/>;
+  return <DashboardWorkspace userId={session.user.id} onSignOut={async () => { await supabase?.auth.signOut(); setSession(null); }}/>;
 }
