@@ -68,18 +68,36 @@ function DashboardWorkspace({ onSignOut, userId }: { onSignOut: () => void; user
 
   useEffect(() => {
     if (!dataLoaded) return;
-    localStorage.setItem(userStoreKey(userId), JSON.stringify(data));
-    const saveCloud = async () => {
+    try {
+      localStorage.setItem(userStoreKey(userId), JSON.stringify(data));
+    } catch {
+      setNotice('Browser storage is full or unavailable. Export a backup and clear some space.');
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
       if (!supabase) return;
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) return;
-      const { error } = await supabase.from('mrk_workspaces').upsert({
-        user_id: authData.user.id, workspace_data: data, updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-      if (error) setNotice('Cloud save failed. Please check your database setup and connection.');
+      try {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (authError || !authData.user || authData.user.id !== userId) {
+          setNotice('Cloud save paused because the signed-in account could not be verified.');
+          return;
+        }
+        const { error } = await supabase.from('mrk_workspaces').upsert({
+          user_id: userId, workspace_data: data, updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+        if (!cancelled && error) setNotice('Cloud save failed. Your browser copy remains available; check the database connection.');
+      } catch {
+        if (!cancelled) setNotice('Cloud save failed. Your browser copy remains available; check your connection.');
+      }
+    }, 600);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
     };
-    saveCloud();
-  }, [data, dataLoaded]);
+  }, [data, dataLoaded, userId]);
 
   const all = useMemo(() => Object.entries(data).flatMap(([section, items]) =>
     items.map(item => ({ ...item, section: section as Exclude<Section, 'overview'> }))
