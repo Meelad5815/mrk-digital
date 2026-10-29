@@ -105,6 +105,9 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
   ), [data]);
   const incomeTotal = data.income.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const expenseTotal = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const currentMonth = today().slice(0, 7);
+  const monthlyIncome = data.income.filter(item => item.date.startsWith(currentMonth)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const monthlyExpenses = data.expenses.filter(item => item.date.startsWith(currentMonth)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const pendingOrders = data.orders.filter(item => !['Completed', 'Paid', 'Cancelled'].includes(item.status)).length;
   const filtered = active === 'overview' ? [] : data[active].filter(item =>
     (statusFilter === 'All' || item.status === statusFilter) &&
@@ -293,7 +296,7 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
                   </article>)}
                 </div> : <EmptyState title="No records found" message={query ? 'Try a different search term.' : 'Add your first record using the button at the top.'}/>}
               </section>
-              {['income','expenses'].includes(active) && <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Recorded {active === 'income' ? 'income' : 'expenses'} total: <strong className="text-slate-900">{money(active === 'income' ? incomeTotal : expenseTotal)}</strong></div>}
+              {['income','expenses'].includes(active) && <div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">All-time {active === 'income' ? 'income' : 'expenses'}: <strong className="text-slate-900">{money(active === 'income' ? incomeTotal : expenseTotal)}</strong></div><div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">This month: <strong className="text-slate-900">{money(active === 'income' ? monthlyIncome : monthlyExpenses)}</strong><span className="mt-1 block text-xs text-slate-400">Based on record date</span></div></div>}
             </>}
           </div>
 
