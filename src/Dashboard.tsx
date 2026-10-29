@@ -45,6 +45,7 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
   const [dataLoaded, setDataLoaded] = useState(false);
   const [active, setActive] = useState<Section>('overview');
   const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'All' | Status>('All');
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<RecordItem | null>(null);
   const [notice, setNotice] = useState('');
