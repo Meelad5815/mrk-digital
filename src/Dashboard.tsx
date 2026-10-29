@@ -107,6 +107,7 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
   const expenseTotal = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const pendingOrders = data.orders.filter(item => !['Completed', 'Paid', 'Cancelled'].includes(item.status)).length;
   const filtered = active === 'overview' ? [] : data[active].filter(item =>
+    (statusFilter === 'All' || item.status === statusFilter) &&
     [item.name, item.notes, item.phone, item.category, item.status].some(value => (value || '').toLowerCase().includes(query.toLowerCase()))
   );
 
@@ -279,8 +280,11 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
             </> : <>
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
-                  <div><h2 className="font-extrabold">{titles[active]}</h2><p className="mt-1 text-sm text-slate-500">{filtered.length} record{filtered.length === 1 ? '' : 's'}</p></div>
-                  <div className="relative w-full sm:max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search records..." className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"/></div>
+                  <div><h2 className="font-extrabold">{titles[active]}</h2><p className="mt-1 text-sm text-slate-500">{filtered.length} record{filtered.length === 1 ? '' : 's'} shown</p></div>
+                  <div className="flex w-full flex-col gap-2 sm:max-w-xl sm:flex-row">
+                    <div className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search records..." className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"/></div>
+                    <select aria-label="Filter by status" value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'All' | Status)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"><option value="All">All statuses</option><option value="Pending">Pending</option><option value="In Progress">In progress</option><option value="Completed">Completed</option><option value="Paid">Paid</option><option value="Cancelled">Cancelled</option></select>
+                  </div>
                 </div>
                 {filtered.length ? <div className="divide-y divide-slate-100">
                   {filtered.map(item => <article key={item.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
