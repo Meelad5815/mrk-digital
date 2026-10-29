@@ -150,17 +150,56 @@ function DashboardWorkspace({ onSignOut, userId }: { onSignOut: () => void; user
     URL.revokeObjectURL(url);
   };
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]; if (!file) return;
+    const input = event.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setNotice('Backup is too large. Choose a JSON file smaller than 5 MB.');
+      input.value = '';
+      return;
+    }
+    if (!file.name.toLowerCase().endsWith('.json')) {
+      setNotice('Choose a valid .json backup file.');
+      input.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const imported = JSON.parse(String(reader.result));
-        const next = Object.fromEntries(Object.keys(emptyStore).map(key => [key, Array.isArray(imported[key]) ? imported[key] : []])) as Store;
-        if (!window.confirm('Replace the current dashboard data with this backup?')) return;
-        setData(next); setNotice('Backup imported.');
-      } catch { setNotice('Could not read this backup file.'); }
+        const imported: unknown = JSON.parse(String(reader.result));
+        if (!imported || typeof imported !== 'object' || Array.isArray(imported)) {
+          throw new Error('Invalid backup format');
+        }
+        const source = imported as Record<string, unknown>;
+        const next = Object.fromEntries(Object.keys(emptyStore).map(key => {
+          const rows = Array.isArray(source[key]) ? source[key] : [];
+          const safeRows = rows.filter((row): row is Record<string, unknown> =>
+            Boolean(row) && typeof row === 'object' && !Array.isArray(row) &&
+            typeof (row as Record<string, unknown>).name === 'string'
+          ).map(row => ({
+            id: typeof row.id === 'string' && row.id ? row.id : crypto.randomUUID(),
+            name: String(row.name).slice(0, 300),
+            date: typeof row.date === 'string' ? row.date.slice(0, 30) : today(),
+            notes: typeof row.notes === 'string' ? row.notes.slice(0, 5000) : '',
+            amount: Number.isFinite(Number(row.amount)) ? Math.max(0, Number(row.amount)) : 0,
+            status: (['Pending', 'In Progress', 'Completed', 'Paid', 'Cancelled'].includes(String(row.status))
+              ? row.status : 'Pending') as Status,
+            phone: typeof row.phone === 'string' ? row.phone.slice(0, 100) : '',
+            category: typeof row.category === 'string' ? row.category.slice(0, 200) : '',
+            dueDate: typeof row.dueDate === 'string' ? row.dueDate.slice(0, 30) : ''
+          }));
+          return [key, safeRows];
+        })) as Store;
+        if (!window.confirm('Replace the current dashboard data with this backup? Invalid records will be skipped.')) return;
+        setData(next);
+        setNotice('Backup imported and checked.');
+      } catch {
+        setNotice('Could not read this backup. Check that it is a valid MRK JSON export.');
+      }
     };
-    reader.readAsText(file); event.target.value = '';
+    reader.onerror = () => setNotice('Could not read this file. Try another backup.');
+    reader.readAsText(file);
+    input.value = '';
   };
 
   const sectionTitle = active === 'overview' ? 'Business overview' : titles[active];
