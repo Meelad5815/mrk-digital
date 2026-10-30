@@ -31,6 +31,12 @@ const titles: Record<Exclude<Section, 'overview'>, string> = {
   tasks: 'Daily tasks', clients: 'Clients', orders: 'Orders', income: 'Income', expenses: 'Expenses', projects: 'Projects'
 };
 const money = (value: number) => new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(value || 0);
+const whatsappUrl = (phone: string) => {
+  let digits = phone.replace(/\\D/g, '');
+  if (digits.startsWith('0')) digits = `92${digits.slice(1)}`;
+  else if (digits.length === 10 && digits.startsWith('3')) digits = `92${digits}`;
+  return digits.length >= 11 && digits.length <= 15 ? `https://wa.me/${digits}` : null;
+};
 const readStore = (userId: string): Store => {
   try {
     const raw = localStorage.getItem(userStoreKey(userId));
@@ -292,7 +298,7 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
                 {filtered.length ? <div className="divide-y divide-slate-100">
                   {filtered.map(item => <article key={item.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
                     <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold">{item.name}</h3><StatusPill status={item.status}/></div><p className="mt-1 text-sm text-slate-500">{item.date}{item.dueDate ? ` · Due ${item.dueDate}` : ''}{item.phone ? ` · ${item.phone}` : ''}{item.category ? ` · ${item.category}` : ''}</p>{item.notes && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{item.notes}</p>}</div>
-                    <div className="flex items-center justify-between gap-4 sm:justify-end">{['income','expenses','orders'].includes(active) && <strong className="whitespace-nowrap">{money(item.amount)}</strong>}<div className="flex gap-2"><button onClick={() => openEdit(item)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold hover:bg-slate-50">Edit</button><button onClick={() => remove(active, item.id)} aria-label="Delete record" className="rounded-lg border border-rose-100 p-2 text-rose-600 hover:bg-rose-50"><Trash2 size={16}/></button></div></div>
+                    <div className="flex items-center justify-between gap-4 sm:justify-end">{active === 'clients' && item.phone && whatsappUrl(item.phone) && <a href={whatsappUrl(item.phone)!} target="_blank" rel="noopener noreferrer" aria-label={`Message ${item.name} on WhatsApp`} className="rounded-lg border border-emerald-200 px-3 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50">WhatsApp</a>}{['income','expenses','orders'].includes(active) && <strong className="whitespace-nowrap">{money(item.amount)}</strong>}<div className="flex gap-2"><button onClick={() => openEdit(item)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold hover:bg-slate-50">Edit</button><button onClick={() => remove(active, item.id)} aria-label="Delete record" className="rounded-lg border border-rose-100 p-2 text-rose-600 hover:bg-rose-50"><Trash2 size={16}/></button></div></div>
                   </article>)}
                 </div> : <EmptyState title="No records found" message={query ? 'Try a different search term.' : 'Add your first record using the button at the top.'}/>}
               </section>
