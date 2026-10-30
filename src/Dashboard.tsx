@@ -165,10 +165,10 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
     const columns: (keyof RecordItem)[] = ['name', 'date', 'dueDate', 'status', 'amount', 'phone', 'category', 'notes'];
     const escapeCsv = (value: unknown) => {
       const text = String(value ?? '');
-      return /[",\\n\\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+      return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
     };
     const rows = [columns.join(','), ...data[active].map(item => columns.map(key => escapeCsv(item[key])).join(','))];
-    const blob = new Blob(['\\uFEFF' + rows.join('\\r\\n')], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `mrk-${active}-${today()}.csv`; a.click();
     URL.revokeObjectURL(url);
