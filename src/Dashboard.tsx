@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase, supabaseConfigured } from './lib/supabase';
 import {
   Activity, ArrowDownRight, ArrowUpRight, BriefcaseBusiness, CheckCircle2,
-  ClipboardList, Download, FileText, FolderKanban, LayoutDashboard, Plus,
+  ClipboardList, Download, FileSpreadsheet, FileText, FolderKanban, LayoutDashboard, Plus,
   Search, Trash2, Users, Wallet, X, CircleDollarSign, RefreshCw, Database
 } from 'lucide-react';
 
@@ -160,6 +160,20 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
     const a = document.createElement('a'); a.href = url; a.download = 'mrk-digital-backup.json'; a.click();
     URL.revokeObjectURL(url);
   };
+  const exportCsv = () => {
+    if (active === 'overview') return;
+    const columns: (keyof RecordItem)[] = ['name', 'date', 'dueDate', 'status', 'amount', 'phone', 'category', 'notes'];
+    const escapeCsv = (value: unknown) => {
+      const text = String(value ?? '');
+      return /[",\\n\\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const rows = [columns.join(','), ...data[active].map(item => columns.map(key => escapeCsv(item[key])).join(','))];
+    const blob = new Blob(['\\uFEFF' + rows.join('\\r\\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `mrk-${active}-${today()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    setNotice(`${titles[active]} exported as CSV.`);
+  };
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.target;
     const file = input.files?.[0];
@@ -251,7 +265,7 @@ function DashboardWorkspace({ onSignOut, userId, guestMode = false }: { onSignOu
                 <div><p className="text-xs font-semibold text-slate-500">MRK DIGITAL & ONLINE SERVICES</p><h1 className="text-lg font-extrabold md:text-xl">{sectionTitle}</h1></div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={exportData} className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold hover:bg-slate-50 sm:flex"><Download size={16}/> Backup</button>
+                <button onClick={exportData} className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold hover:bg-slate-50 sm:flex"><Download size={16}/> Backup</button>{active !== 'overview' && <button onClick={exportCsv} className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold hover:bg-slate-50 md:flex"><FileSpreadsheet size={16}/> CSV</button>}
                 <button onClick={openNew} className="flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"><Plus size={17}/> Add record</button>
               </div>
             </div>
